@@ -35,7 +35,8 @@ mount --bind /root/.dummy $workdir/etc/fstab
 apt-get install live-boot live-config mtools xorriso squashfs-tools dialog grub-pc-bin grub-efi --yes
 apt clean
 [ -f $isowork/live/filesystem.squashfs ] || mksquashfs $workdir $isowork/live/filesystem.squashfs -comp gzip -wildcards
-apt purge live-boot live-config --yes || true
+apt-get purge live-boot live-config --yes || true
+apt-get autoremove --yes || true
 
 #unbinding and clearing
 umount -lf $workdir/etc/fstab || true
@@ -47,8 +48,9 @@ rmdir $workdir || true
 #create boot config
 cp -pf "/boot/vmlinuz-$(uname -r)" $isowork/live/vmlinuz
 cp -pf "/boot/initrd.img-$(uname -r)" $isowork/live/initrd.img
-echo "menuentry $(cat /etc/os-release | grep ^NAME | sed s/.*=//) {" > $isowork/boot/grub/grub.cfg
-echo "    linux /live/vmlinuz boot=live" >> $isowork/boot/grub/grub.cfg
+"insmod all_video" > $isowork/boot/grub/grub.cfg
+echo "menuentry $(cat /etc/os-release | grep ^NAME | sed s/.*=//) {" >> $isowork/boot/grub/grub.cfg
+echo "    linux /live/vmlinuz boot=live components locales=tr_TR.UTF-8,en_US.UTF-8 keyboard-layouts=tr" >> $isowork/boot/grub/grub.cfg
 echo "    initrd /live/initrd.img" >> $isowork/boot/grub/grub.cfg
 echo "}" >> $isowork/boot/grub/grub.cfg
 # create iso image
