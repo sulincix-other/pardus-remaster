@@ -1,5 +1,23 @@
 #!/bin/bash
 set -e
+if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
+    mkdir /source /target
+    mount /dev/loop0 /source
+    # TODO: Look here again :)
+    if [ -d /sys/firmware/efi ] ; then
+        echo -e "g\nn\n\n+100M\nn\n\n\nw\nt\n\n1\nw\n" | fdisk /dev/sda
+        mkfs.vfat /dev/sda1
+        mkfs.ext4 /dev/sda2
+        mount /dev/sda2 /target
+    else
+        echo -e "o\nn\np\n\n\n\nw\n" | fdisk /dev/sda
+        mkfs.ext4 /dev/sda1
+        mount /dev/sda1 /target
+    fi
+    cp -prfv /source/* /target/
+fi
+
+
 #Define and create directories
 workdir=/root/.workdir
 mkdir -p $workdir
