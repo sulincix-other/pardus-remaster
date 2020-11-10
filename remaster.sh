@@ -15,6 +15,21 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
         mount /dev/sda1 /target
     fi
     cp -prfv /source/* /target/
+    if [ -d /sys/firmware/efi ] ; then
+        mkdir -p /target/boot/efi || true
+        mount /dev/sda1 /target/boot/efi
+    fi
+    for i in dev sys proc run
+    do
+        mkdir -p /target/$i || true
+        mount --bind /$i /target/$i
+    done
+    chroot /target grub-install /dev/sda
+    chroot /target apt-get purge live-boot* live-config* --yes || true
+    chroot /target update-grub
+    umount -f -R /target/*
+    sync
+    echo b > /proc/sysrq-trigger
 fi
 
 
