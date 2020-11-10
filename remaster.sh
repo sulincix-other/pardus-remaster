@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
-    mkdir /source /target
-    mount /dev/loop0 /source
+    mkdir /source /target || true
+    mount /dev/loop0 /source || true
     # TODO: Look here again :)
     if [ -d /sys/firmware/efi ] ; then
         echo -e "g\nn\n\n+100M\nn\n\n\nw\nt\n\n1\nw\n" | fdisk /dev/sda
@@ -14,7 +14,7 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
         mkfs.ext4 /dev/sda1
         mount /dev/sda1 /target
     fi
-    rsync -avxHAX --progress /source/ /target/
+    rsync -avhHAX /source/ /target/
     if [ -d /sys/firmware/efi ] ; then
         mkdir -p /target/boot/efi || true
         mount /dev/sda1 /target/boot/efi
@@ -26,7 +26,14 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     done
     chroot /target grub-install /dev/sda
     chroot /target apt-get purge live-boot* live-config* --yes || true
+    chroot /target apt-get autoremove
     chroot /target update-initramfs -u -k all
+    if [ -d /sys/firmware/efi ] ; then
+        echo "/dev/sda2 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
+        echo "/dev/sda1 /boot/efi       vfat    umask=0077               0       1" >> /target/etc/fstab
+    else
+        echo "/dev/sda1 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
+    fi
     chroot /target update-grub
     umount -f -R /target/* || true
     sync
