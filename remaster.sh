@@ -26,7 +26,7 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     done
     chroot /target grub-install /dev/sda
     chroot /target apt-get purge live-boot* live-config* --yes || true
-    chroot /target apt-get autoremove
+    chroot /target apt-get autoremove --yes || true
     chroot /target update-initramfs -u -k all
     if [ -d /sys/firmware/efi ] ; then
         echo "/dev/sda2 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
