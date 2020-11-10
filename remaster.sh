@@ -14,7 +14,7 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
         mkfs.ext4 /dev/sda1
         mount /dev/sda1 /target
     fi
-    cp -prfv /source/* /target/
+    rsync -avxHAX --progress /source/ /target/
     if [ -d /sys/firmware/efi ] ; then
         mkdir -p /target/boot/efi || true
         mount /dev/sda1 /target/boot/efi
@@ -26,10 +26,10 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     done
     chroot /target grub-install /dev/sda
     chroot /target apt-get purge live-boot* live-config* --yes || true
+    chroot /target update-initramfs -u -k all
     chroot /target update-grub
-    umount -f -R /target/*
+    umount -f -R /target/* || true
     sync
-    echo b > /proc/sysrq-trigger
 fi
 
 
@@ -65,7 +65,7 @@ done
 mount --bind /root/.dummy $workdir/etc/fstab
 
 #prepare and take image then clean
-apt-get install live-boot live-config mtools xorriso squashfs-tools dialog grub-pc-bin grub-efi --yes
+apt-get install live-boot live-config mtools xorriso squashfs-tools dialog rsync grub-pc-bin grub-efi --yes
 apt clean
 [ -f $isowork/live/filesystem.squashfs ] || mksquashfs $workdir $isowork/live/filesystem.squashfs -comp gzip -wildcards
 cp -pf "/boot/vmlinuz-$(uname -r)" $isowork/live/vmlinuz
