@@ -16,6 +16,12 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     fi
     rsync -avhHAX /source/ /target/
     if [ -d /sys/firmware/efi ] ; then
+        echo "/dev/sda2 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
+        echo "/dev/sda1 /boot/efi       vfat    umask=0077               0       1" >> /target/etc/fstab
+    else
+        echo "/dev/sda1 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
+    fi
+    if [ -d /sys/firmware/efi ] ; then
         mkdir -p /target/boot/efi || true
         mount /dev/sda1 /target/boot/efi
     fi
@@ -28,15 +34,10 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     chroot /target apt-get purge live-boot* live-config* --yes || true
     chroot /target apt-get autoremove --yes || true
     chroot /target update-initramfs -u -k all
-    if [ -d /sys/firmware/efi ] ; then
-        echo "/dev/sda2 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
-        echo "/dev/sda1 /boot/efi       vfat    umask=0077               0       1" >> /target/etc/fstab
-    else
-        echo "/dev/sda1 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
-    fi
     chroot /target update-grub
     umount -f -R /target/* || true
     sync
+    echo b > /proc/sysrq-trigger
 fi
 
 
