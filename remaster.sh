@@ -5,12 +5,14 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     mount /dev/loop0 /source || true
     # TODO: Look here again :)
     if [ -d /sys/firmware/efi ] ; then
-        echo -e "g\nn\n\n+100M\nn\n\n\nw\nt\n\n1\nw\n" | fdisk /dev/sda
+        echo -e "g\ny\nw\n" | fdisk /dev/sda
+        echo -e "n\n\n\n+100M\ny\n\nw\n" | fdisk /dev/sda
+        echo -e "n\n\n\n\ny\n\nw\n" | fdisk /dev/sda
         mkfs.vfat /dev/sda1
         mkfs.ext4 /dev/sda2
         mount /dev/sda2 /target
     else
-        echo -e "o\nn\np\n\n\n\nw\n" | fdisk /dev/sda
+        echo -e "o\nn\np\n\n\n\ny\nw\n" | fdisk /dev/sda
         mkfs.ext4 /dev/sda1
         mount /dev/sda1 /target
     fi
