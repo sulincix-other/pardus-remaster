@@ -1,4 +1,13 @@
 #!/bin/bash
+if [ $UID -ne 0 ] ; then
+    echo "You must be root!"
+    exit 1
+fi
+self="$(realpath $0)"
+if ! [ "$self" == "/usr/bin/remaster" ] ; then
+    install "$self" "/usr/bin/remaster"
+    exec "/usr/bin/remaster"
+fi
 set -e
 if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     mkdir /source /target || true
