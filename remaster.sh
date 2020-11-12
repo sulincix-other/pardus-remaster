@@ -52,7 +52,7 @@ mkdir -p $isowork/boot/grub/
 touch /root/.dummy
 
 #binding and symlink directories
-for dir in bin lib32 boot lib64 libx32 opt sbin usr etc lib var home
+for dir in bin lib32 boot lib64 libx32 opt sbin usr etc lib var home ortak-alan
 do
     if [ "" == "$(readlink /$dir)" ]
     then
