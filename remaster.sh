@@ -35,11 +35,11 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
         echo -e "n\n\n\n+100M\ny\n\nw\n" | fdisk /dev/sda  || fallback
         echo -e "n\n\n\n\ny\n\nw\n" | fdisk /dev/sda  || fallback
         mkfs.vfat /dev/sda1  || fallback
-        mkfs.ext4 /dev/sda2  || fallback
-        mount /dev/sda2 /target  || fallback
+        yes | mkfs.ext4  /dev/sda2  || fallback
+        yes| mount /dev/sda2  /target  || fallback
     else
         echo -e "o\nn\np\n\n\n\ny\nw\n" | fdisk /dev/sda  || fallback
-        echo -e "y\n" | mkfs.ext4 /dev/sda1  || fallback
+        yes | mkfs.ext4 /dev/sda1  || fallback
         mount /dev/sda1 /target  || fallback
     fi
     #rsync -avhHAX /source/ /target
@@ -132,4 +132,3 @@ echo "}" >> $isowork/boot/grub/grub.cfg
 # create iso image
 grub-mkrescue $isowork -o ./live-image-amd64.iso
 rm -rf $isowork $workdir /root/.dummy
-
