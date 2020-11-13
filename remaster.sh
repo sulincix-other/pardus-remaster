@@ -26,8 +26,8 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
         mkfs.ext4 /dev/sda1
         mount /dev/sda1 /target
     fi
-    rsync -avhHAX /source/ /target
-    #ls /source/ | xargs -n1 -P4 -I% rsync -avhHAX % /target/%
+    #rsync -avhHAX /source/ /target
+    ls /source/ | xargs -n1 -P$(nproc) -I% rsync -avhHAX /source/% /target/
     if [ -d /sys/firmware/efi ] ; then
         echo "/dev/sda2 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
         echo "/dev/sda1 /boot/efi       vfat    umask=0077               0       1" >> /target/etc/fstab
