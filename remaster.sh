@@ -12,18 +12,10 @@ if ! [ "$self" == "/usr/bin/remaster" ] ; then
     exit 0
 fi
 fallback(){
-echo -e "\033[31;1mError: Instalation step have been failed.\033[;0m"
-while true
-do
+    echo -e "\033[31;1mError: Instalation step have been failed.\033[;0m"
     /bin/bash
-done
 }
 set -e
-
-if cat /proc/cmdline | grep "shell" &>/dev/null; then
-    clear
-    falllback
-fi
 
 if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
 {
@@ -59,10 +51,11 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
         mkdir -p /target/$i || true 
         mount --bind /$i /target/$i  || fallback
     done
-    chroot /target grub-install /dev/sda  || fallback
     chroot /target apt-get purge live-boot* live-config* --yes || true
     chroot /target apt-get autoremove --yes || true
     chroot /target update-initramfs -u -k all  || fallback
+    chroot /target grub-install /dev/sda  || fallback
+    efibootmgr --create --disk /dev/sda --part 1 --loader /EFI/pardus/grubx64.efi --label "pardus" || fallback
     chroot /target update-grub  || fallback
     umount -f -R /target/* || true
     sync  || fallback
