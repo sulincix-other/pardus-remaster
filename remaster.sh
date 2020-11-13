@@ -1,4 +1,6 @@
 #!/bin/bash
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PS1="# "
 if [ $UID -ne 0 ] ; then
     echo "You must be root!"
     exit 1
@@ -10,53 +12,62 @@ if ! [ "$self" == "/usr/bin/remaster" ] ; then
     exit 0
 fi
 fallback(){
+echo -e "\033[31;1mError: Instalation step have been failed.\033[;0m"
 while true
 do
-    /bin/bash
+    /sbin/agetty --autologin root 38400 tty1 linux
 done
 }
 set -e
+
+if cat /proc/cmdline | grep "shell" &>/dev/null; then
+    clear
+    falllback
+fi
+
 if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
+{
     mkdir /source /target || true
     mount /dev/loop0 /source || true
     # TODO: Look here again :)
     if [ -d /sys/firmware/efi ] ; then
-        echo -e "g\ny\nw\n" | fdisk /dev/sda
-        echo -e "n\n\n\n+100M\ny\n\nw\n" | fdisk /dev/sda
-        echo -e "n\n\n\n\ny\n\nw\n" | fdisk /dev/sda
-        mkfs.vfat /dev/sda1
-        mkfs.ext4 /dev/sda2
-        mount /dev/sda2 /target
+        echo -e "g\ny\nw\n" | fdisk /dev/sda || fallback
+        echo -e "n\n\n\n+100M\ny\n\nw\n" | fdisk /dev/sda  || fallback
+        echo -e "n\n\n\n\ny\n\nw\n" | fdisk /dev/sda  || fallback
+        mkfs.vfat /dev/sda1  || fallback
+        mkfs.ext4 /dev/sda2  || fallback
+        mount /dev/sda2 /target  || fallback
     else
-        echo -e "o\nn\np\n\n\n\ny\nw\n" | fdisk /dev/sda
-        mkfs.ext4 /dev/sda1
-        mount /dev/sda1 /target
+        echo -e "o\nn\np\n\n\n\ny\nw\n" | fdisk /dev/sda  || fallback
+        mkfs.ext4 /dev/sda1  || fallback
+        mount /dev/sda1 /target  || fallback
     fi
     #rsync -avhHAX /source/ /target
-    ls /source/ | xargs -n1 -P$(nproc) -I% rsync -avhHAX /source/% /target/
+    ls /source/ | xargs -n1 -P$(nproc) -I% rsync -avhHAX /source/% /target/  || fallback
     if [ -d /sys/firmware/efi ] ; then
-        echo "/dev/sda2 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
-        echo "/dev/sda1 /boot/efi       vfat    umask=0077               0       1" >> /target/etc/fstab
+        echo "/dev/sda2 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab  || fallback
+        echo "/dev/sda1 /boot/efi       vfat    umask=0077               0       1" >> /target/etc/fstab  || fallback
     else
-        echo "/dev/sda1 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
+        echo "/dev/sda1 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab  || fallback
     fi
     if [ -d /sys/firmware/efi ] ; then
         mkdir -p /target/boot/efi || true
-        mount /dev/sda1 /target/boot/efi
+        mount /dev/sda1 /target/boot/efi  || fallback
     fi
     for i in dev sys proc run
     do
-        mkdir -p /target/$i || true
-        mount --bind /$i /target/$i
+        mkdir -p /target/$i || true 
+        mount --bind /$i /target/$i  || fallback
     done
-    chroot /target grub-install /dev/sda
+    chroot /target grub-install /dev/sda  || fallback
     chroot /target apt-get purge live-boot* live-config* --yes || true
     chroot /target apt-get autoremove --yes || true
-    chroot /target update-initramfs -u -k all
-    chroot /target update-grub
+    chroot /target update-initramfs -u -k all  || fallback
+    chroot /target update-grub  || fallback
     umount -f -R /target/* || true
-    sync
+    sync  || fallback
     echo b > /proc/sysrq-trigger
+} || fallback
 fi
 
 
