@@ -15,7 +15,7 @@ fallback(){
 echo -e "\033[31;1mError: Instalation step have been failed.\033[;0m"
 while true
 do
-    /sbin/agetty --autologin root 38400 tty1 linux
+    /bin/bash
 done
 }
 set -e
@@ -39,7 +39,7 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
         mount /dev/sda2 /target  || fallback
     else
         echo -e "o\nn\np\n\n\n\ny\nw\n" | fdisk /dev/sda  || fallback
-        mkfs.ext4 /dev/sda1  || fallback
+        echo -e "y\n" | mkfs.ext4 /dev/sda1  || fallback
         mount /dev/sda1 /target  || fallback
     fi
     #rsync -avhHAX /source/ /target
