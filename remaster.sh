@@ -26,7 +26,8 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
         mkfs.ext4 /dev/sda1
         mount /dev/sda1 /target
     fi
-    rsync -avhHAX /source/ /target/
+    rsync -avhHAX /source/ /target
+    #ls /source/ | xargs -n1 -P4 -I% rsync -avhHAX % /target/%
     if [ -d /sys/firmware/efi ] ; then
         echo "/dev/sda2 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab
         echo "/dev/sda1 /boot/efi       vfat    umask=0077               0       1" >> /target/etc/fstab
@@ -104,6 +105,11 @@ rmdir $workdir || true
 echo "insmod all_video" > $isowork/boot/grub/grub.cfg
 echo "menuentry $(cat /etc/os-release | grep ^NAME | sed s/.*=//) {" >> $isowork/boot/grub/grub.cfg
 echo "    linux /live/vmlinuz boot=live components locales=tr_TR.UTF-8,en_US.UTF-8 keyboard-layouts=tr" >> $isowork/boot/grub/grub.cfg
+echo "    initrd /live/initrd.img" >> $isowork/boot/grub/grub.cfg
+echo "}" >> $isowork/boot/grub/grub.cfg
+#create install config
+echo "menuentry Install $(cat /etc/os-release | grep ^NAME | sed s/.*=//) {" >> $isowork/boot/grub/grub.cfg
+echo "    linux /live/vmlinuz boot=live components init=/usr/bin/remaster" >> $isowork/boot/grub/grub.cfg
 echo "    initrd /live/initrd.img" >> $isowork/boot/grub/grub.cfg
 echo "}" >> $isowork/boot/grub/grub.cfg
 # create iso image
