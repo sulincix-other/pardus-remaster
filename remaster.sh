@@ -55,7 +55,9 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     chroot /target apt-get autoremove --yes || true
     chroot /target update-initramfs -u -k all  || fallback
     chroot /target grub-install /dev/sda  || fallback
-    efibootmgr --create --disk /dev/sda --part 1 --loader /EFI/pardus/grubx64.efi --label "pardus" || fallback
+    if [ -d /sys/firmware/efi ] ; then
+        efibootmgr --create --disk /dev/sda --part 1 --loader /EFI/pardus/grubx64.efi --label "pardus" || fallback
+    fi
     chroot /target update-grub  || fallback
     umount -f -R /target/* || true
     sync  || fallback
