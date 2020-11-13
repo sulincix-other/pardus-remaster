@@ -6,7 +6,8 @@ fi
 self="$(realpath $0)"
 if ! [ "$self" == "/usr/bin/remaster" ] ; then
     install "$self" "/usr/bin/remaster"
-    exec "/usr/bin/remaster"
+    echo -e "\033[32;1mSelf script installation done.\n Now you should remove the script and run \"\033[31;1mremaster\033[32;1m\" command.\033[;0m"
+    exit 0
 fi
 set -e
 if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
