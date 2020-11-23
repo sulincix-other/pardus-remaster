@@ -99,7 +99,7 @@ mount --bind /root/.dummy $workdir/etc/fstab
 
 #prepare and take image then clean
 apt-get install live-boot live-config mtools xorriso squashfs-tools dialog rsync grub-pc-bin grub-efi --yes
-apt clean
+apt-get clean || true
 [ -f $isowork/live/filesystem.squashfs ] || mksquashfs $workdir $isowork/live/filesystem.squashfs -comp gzip -wildcards
 cp -pf "/boot/vmlinuz-$(uname -r)" $isowork/live/vmlinuz
 cp -pf "/boot/initrd.img-$(uname -r)" $isowork/live/initrd.img
