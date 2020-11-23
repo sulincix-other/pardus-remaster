@@ -61,6 +61,7 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     if [ -d /sys/firmware/efi ] ; then
         efibootmgr --create --disk /dev/sda --part 1 --loader /EFI/pardus/grubx64.efi --label "pardus" || fallback
     fi
+    echo "GRUB_DISABLE_OS_PROBER=true" >> /target/etc/default/grub
     chroot /target update-grub  || fallback
     umount -f -R /target/* || true
     sync  || fallback
