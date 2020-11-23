@@ -1,13 +1,12 @@
-Source: remaster
+Source: pardus-remaster
 Section: utils
 Priority: optional
-Maintainer: Your Name <your.email@example.org>
+Maintainer: Ali Riza Keskin <ali.riza.keskin@pardus.org.tr>
 Build-Depends: make
 Standards-Version: 4.3.0
 Homepage: https://example.org
 
-Package: remaster
+Package: pardus-remaster
 Architecture: all
 Depends: ${misc:Depends}
-Description: Edit me
- Edit me. I am description
+Description: create pardus iso images from system and install image into disk
