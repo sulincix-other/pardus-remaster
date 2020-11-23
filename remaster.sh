@@ -19,6 +19,9 @@ set -e
 
 if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
 {
+    mount -t devtmpfs devtmpfs /dev || true
+    mount -t proc proc /proc || true
+    mount -t sysfs sysfs /sys || true
     mkdir /source /target || true
     mount /dev/loop0 /source || true
     # TODO: Look here again :)
