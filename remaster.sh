@@ -14,6 +14,7 @@ fi
 fallback(){
     echo -e "\033[31;1mError: Instalation step have been failed.\033[;0m"
     /bin/bash
+    echo b > /proc/sysrq-trigger
 }
 set -e
 
@@ -54,7 +55,7 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
         mkdir -p /target/$i || true 
         mount --bind /$i /target/$i  || fallback
     done
-    chroot /target apt-get purge live-boot* live-config* --yes || true
+    chroot /target apt-get purge live-boot* live-config* live-tools --yes || true
     chroot /target apt-get autoremove --yes || true
     chroot /target update-initramfs -u -k all  || fallback
     chroot /target grub-install /dev/sda  || fallback
@@ -65,6 +66,8 @@ if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
     chroot /target update-grub  || fallback
     umount -f -R /target/* || true
     sync  || fallback
+    echo "Installation done. System restarting in 10 seconds. Press any key to restart immediately."
+    timeout 10 read -n 1
     echo b > /proc/sysrq-trigger
 } || fallback
 fi
@@ -98,6 +101,9 @@ do
     mkdir -p $workdir/$dir
 done
 
+#remove swap resume 
+rm -fv /etc/initramfs-tools/conf.d/resume || true
+
 #bind fstab as dummy
 mount --bind /root/.dummy $workdir/etc/fstab
 
@@ -105,6 +111,7 @@ mount --bind /root/.dummy $workdir/etc/fstab
 apt-get install live-boot live-config mtools xorriso squashfs-tools dialog rsync grub-pc-bin grub-efi --yes
 apt-get clean || true
 [ -f $isowork/live/filesystem.squashfs ] || mksquashfs $workdir $isowork/live/filesystem.squashfs -comp gzip -wildcards
+update-initramfs -u -k all
 cp -pf "/boot/vmlinuz-$(uname -r)" $isowork/live/vmlinuz
 cp -pf "/boot/initrd.img-$(uname -r)" $isowork/live/initrd.img
 apt-get purge live-boot* live-config* --yes || true
