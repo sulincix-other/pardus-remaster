@@ -1,5 +1,6 @@
 #!/bin/bash
 set -ex
+. /etc/remaster.conf
 #install dependencies
 apt install grub-pc-bin grub-efi squashfs-tools xorriso mtools curl -y
 
@@ -30,21 +31,28 @@ done
 #hide flatpak applications (optional)
 [[ -d $rootfs/var/lib/flatpak ]] && mount -v --bind /tmp/work/empty $rootfs/var/lib/flatpak
 
-#remove users
-for u in $(ls /home/) ; do
-    chroot $rootfs userdel -fr $u || true
-done
-
+if [[ "${remove_user}" == "true" ]] ; then
+    #remove users
+    for u in $(ls /home/) ; do
+        chroot $rootfs userdel -fr $u || true
+    done
+fi
 mount --bind /tmp/work/empty-file $rootfs/etc/fstab
 
-#integrate installer (automated installer / optional)
-install /usr/lib/pardus/remaster/install $rootfs/install
-[[ -f $rootfs/install ]] && chmod +x $rootfs/install
+if [[ "${integrate_installer}" == "true" ]] ; then
+    #integrate installer (automated installer / optional)
+    install /usr/lib/pardus/remaster/install $rootfs/install
+    [[ -f $rootfs/install ]] && chmod +x $rootfs/install
+fi
+
+#install packages
 chroot $rootfs apt install curl nano rsync parted grub-pc-bin grub-efi dosfstools -y
 
 #clear rootfs
 find $rootfs/var/log -type f | xargs rm -f
 chroot $rootfs apt clean -y
+
+install /etc/remaster.conf $rootfs/etc/remaster.conf
 
 #create squashfs
 if [[ ! -f iso/live/filesystem.squashfs ]] ; then
@@ -62,16 +70,18 @@ for k in $(ls /boot/vmlinuz-*) ; do
     if [[ -f /boot/initrd.img-$ver ]] ; then
         cp -f $rootfs/boot/vmlinuz-$ver iso/boot
         cp -f $rootfs/boot/initrd.img-$ver iso/boot
-        if [[ -f $rootfs/install ]] ; then
+        if [[ -f $rootfs/install && "${integrate_installer}" == "true" ]] ; then
             echo "menuentry \"Install $dist ($ver)\" {" >> $grub
             echo "    linux /boot/vmlinuz-$ver boot=live init=/install" >> $grub
             echo "    initrd /boot/initrd.img-$ver" >> $grub
             echo "}" >> $grub
         fi
-        echo "menuentry \"$dist ($ver)\" {" >> $grub
-        echo "    linux /boot/vmlinuz-$ver boot=live live-config quiet splash" >> $grub
-        echo "    initrd /boot/initrd.img-$ver" >> $grub
-        echo "}" >> $grub
+        if [[ "${live_boot}" == "true" ]] ; then
+            echo "menuentry \"$dist ($ver)\" {" >> $grub
+            echo "    linux /boot/vmlinuz-$ver boot=live live-config quiet splash" >> $grub
+            echo "    initrd /boot/initrd.img-$ver" >> $grub
+            echo "}" >> $grub
+        fi
     fi
 done
 

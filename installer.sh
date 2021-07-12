@@ -4,15 +4,10 @@ export PATH=/usr/bin:/usr/sbin:/bin:/sbin
 msg(){
     echo -e "\033[32;1m$1\033[;0m"
 }
-echo "export DISK=sda" > /etc/install.conf
-echo "export username=admin" >> /etc/install.conf
-echo "export password=1" >> /etc/install.conf
-echo "export debug=false" >> /etc/install.conf
-echo "export partitioning=true" >> /etc/install.conf
 echo "If you press any key in 3 seconds, switch to edit mode"
 echo "Waiting 3 seconds..."
 if read -n 1 -t 3 -s ; then
-    nano /etc/install.conf
+    nano /etc/remaster.conf
 fi
 source /etc/install.conf
 if [[ $$ -eq 0 ]] ; then
