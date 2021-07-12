@@ -128,7 +128,7 @@ else
     echo "Installation done. System restarting in 10 seconds. Press any key to restart immediately."
     read -t 10 -n 1 -s
 fi
-if [[ $$ -eq 0 ]] ; then
+if [[ $$ -eq 1 ]] ; then
     echo b > /proc/sysrq-trigger
 else
     exit 0
