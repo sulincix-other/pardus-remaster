@@ -1,140 +1,85 @@
 #!/bin/bash
-export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-export PS1="# "
-if [ $UID -ne 0 ] ; then
-    echo "You must be root!"
-    exit 1
-fi
-self="$(realpath $0)"
-if ! [ "$self" == "/usr/bin/remaster" ] ; then
-    install "$self" "/usr/bin/remaster"
-    echo -e "\033[32;1mSelf script installation done.\n Now you should remove the script and run \"\033[31;1mremaster\033[32;1m\" command.\033[;0m"
-    exit 0
-fi
-fallback(){
-    echo -e "\033[31;1mError: Instalation step have been failed.\033[;0m"
-    /bin/bash
-    echo b > /proc/sysrq-trigger
-}
-set -e
+set -ex
+#install dependencies
+apt install grub-pc-bin grub-efi squashfs-tools xorriso mtools curl -y
 
-if cat /proc/cmdline | grep "boot=live" &>/dev/null; then
-{
-    mount -t devtmpfs devtmpfs /dev || true
-    mount -t proc proc /proc || true
-    mount -t sysfs sysfs /sys || true
-    mkdir /source /target || true
-    mount /dev/loop0 /source || true
-    # TODO: Look here again :)
-    if [ -d /sys/firmware/efi ] ; then
-        echo -e "g\ny\nw\n" | fdisk /dev/sda || fallback
-        echo -e "n\n\n\n+100M\ny\n\nw\n" | fdisk /dev/sda  || fallback
-        echo -e "n\n\n\n\ny\n\nw\n" | fdisk /dev/sda  || fallback
-        mkfs.vfat /dev/sda1  || fallback
-        yes | mkfs.ext4  /dev/sda2  || fallback
-        yes| mount /dev/sda2  /target  || fallback
-    else
-        echo -e "o\nn\np\n\n\n\ny\nw\n" | fdisk /dev/sda  || fallback
-        yes | mkfs.ext4 /dev/sda1  || fallback
-        mount /dev/sda1 /target  || fallback
-    fi
-    #rsync -avhHAX /source/ /target
-    ls /source/ | xargs -n1 -P$(nproc) -I% rsync -avhHAX /source/% /target/  || fallback
-    if [ -d /sys/firmware/efi ] ; then
-        echo "/dev/sda2 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab  || fallback
-        echo "/dev/sda1 /boot/efi       vfat    umask=0077               0       1" >> /target/etc/fstab  || fallback
-    else
-        echo "/dev/sda1 /               ext4    errors=remount-ro        0       1" > /target/etc/fstab  || fallback
-    fi
-    if [ -d /sys/firmware/efi ] ; then
-        mkdir -p /target/boot/efi || true
-        mount /dev/sda1 /target/boot/efi  || fallback
-    fi
-    for i in dev sys proc run
-    do
-        mkdir -p /target/$i || true 
-        mount --bind /$i /target/$i  || fallback
-    done
-    chroot /target apt-get purge live-boot* live-config* live-tools --yes || true
-    chroot /target apt-get autoremove --yes || true
-    chroot /target update-initramfs -u -k all  || fallback
-    chroot /target grub-install /dev/sda  || fallback
-    if [ -d /sys/firmware/efi ] ; then
-        efibootmgr --create --disk /dev/sda --part 1 --loader /EFI/pardus/grubx64.efi --label "pardus" || fallback
-    fi
-    echo "GRUB_DISABLE_OS_PROBER=true" >> /target/etc/default/grub
-    chroot /target update-grub  || fallback
-    umount -f -R /target/* || true
-    sync  || fallback
-    echo "Installation done. System restarting in 10 seconds. Press any key to restart immediately."
-    timeout 10 read -n 1
-    echo b > /proc/sysrq-trigger
-} || fallback
+#overlayfs mount
+mount -t tmpfs tmpfs /tmp || true
+mkdir -p /tmp/work/source /tmp/work/a /tmp/work/b /tmp/work/target /tmp/work/empty \
+         iso/live/ iso/boot/grub/|| true
+touch /tmp/work/empty-file
+umount -v -lf -R /tmp/work/* || true
+mount --bind / /tmp/work/source
+mount -t overlay -o lowerdir=/tmp/work/source,upperdir=/tmp/work/a,workdir=/tmp/work/b overlay /tmp/work/target
+
+#resolv.conf fix
+export rootfs=/tmp/work/target
+rm -f $rootfs/etc/resolv.conf || true
+echo "nameserver 1.1.1.1" > $rootfs/etc/resolv.conf
+
+#live-boot install
+chroot $rootfs apt install live-config live-boot -y
+chroot $rootfs apt autoremove -y
+echo -e "live\nlive\n" | chroot $rootfs passwd
+
+#mount empty file and directories
+for i in dev sys proc run tmp root media mnt; do
+    mount -v --bind /tmp/work/empty $rootfs/$i
+done
+
+#hide flatpak applications (optional)
+[[ -d $rootfs/var/lib/flatpak ]] && mount -v --bind /tmp/work/empty $rootfs/var/lib/flatpak
+
+#remove users
+for u in $(ls /home/) ; do
+    chroot $rootfs userdel -fr $u || true
+done
+
+mount --bind /tmp/work/empty-file $rootfs/etc/fstab
+
+#integrate installer (automated installer / optional)
+install /usr/lib/pardus/remaster/install $rootfs/install
+[[ -f $rootfs/install ]] && chmod +x $rootfs/install
+chroot $rootfs apt install curl nano rsync parted grub-pc-bin grub-efi dosfstools -y
+
+#clear rootfs
+find $rootfs/var/log -type f | xargs rm -f
+chroot $rootfs apt clean -y
+
+#create squashfs
+if [[ ! -f iso/live/filesystem.squashfs ]] ; then
+    mksquashfs $rootfs iso/live/filesystem.squashfs -comp gzip -wildcards
 fi
 
-
-#Define and create directories
-workdir=/root/.workdir
-mkdir -p $workdir
-isowork=/root/.isowork
-mkdir -p $isowork/live
-mkdir -p $isowork/boot/grub/
-touch /root/.dummy
-
-#binding and symlink directories
-for dir in bin lib32 boot lib64 libx32 opt sbin usr etc lib var home ortak-alan
-do
-    if [ "" == "$(readlink /$dir)" ]
-    then
-        mkdir -p $workdir/$dir
-        umount -lf -R $workdir/$dir 2>/dev/null || true
-        mount --bind /$dir $workdir/$dir
-    else
-        rm -f $workdir/$dir 2>/dev/null || true
-        ln -s $(readlink /$dir) $workdir/$dir
+#write grub file
+grub=iso/boot/grub/grub.cfg
+echo "insmod all_video" > $grub
+echo "set timeout=3" >> $grub
+echo "set timeout_style=menu" >> $grub
+dist=$(cat /etc/os-release | grep ^PRETTY_NAME | cut -f 2 -d '=' | head -n 1 | sed 's/\"//g')
+for k in $(ls /boot/vmlinuz-*) ; do
+    ver=$(echo $k | sed "s/.*vmlinuz-//g")
+    if [[ -f /boot/initrd.img-$ver ]] ; then
+        cp -f $rootfs/boot/vmlinuz-$ver iso/boot
+        cp -f $rootfs/boot/initrd.img-$ver iso/boot
+        if [[ -f $rootfs/install ]] ; then
+            echo "menuentry \"Install $dist ($ver)\" {" >> $grub
+            echo "    linux /boot/vmlinuz-$ver boot=live init=/install" >> $grub
+            echo "    initrd /boot/initrd.img-$ver" >> $grub
+            echo "}" >> $grub
+        fi
+        echo "menuentry \"$dist ($ver)\" {" >> $grub
+        echo "    linux /boot/vmlinuz-$ver boot=live live-config quiet splash" >> $grub
+        echo "    initrd /boot/initrd.img-$ver" >> $grub
+        echo "}" >> $grub
     fi
 done
 
-#create excluded directories as empty
-for dir in media mnt root dev sys proc run tmp home
-do
-    mkdir -p $workdir/$dir
-done
+#umount all
+umount -v -lf -R /tmp/work/* || true
 
-#remove swap resume 
-rm -fv /etc/initramfs-tools/conf.d/resume || true
+# create iso
+grub-mkrescue iso/ -o live-image-$(date +%s).iso
 
-#bind fstab as dummy
-mount --bind /root/.dummy $workdir/etc/fstab
 
-#prepare and take image then clean
-apt-get install live-boot live-config mtools xorriso squashfs-tools dialog rsync grub-pc-bin grub-efi --yes
-apt-get clean || true
-[ -f $isowork/live/filesystem.squashfs ] || mksquashfs $workdir $isowork/live/filesystem.squashfs -comp gzip -wildcards
-update-initramfs -u -k all
-cp -pf "/boot/vmlinuz-$(uname -r)" $isowork/live/vmlinuz
-cp -pf "/boot/initrd.img-$(uname -r)" $isowork/live/initrd.img
-apt-get purge live-boot* live-config* --yes || true
-apt-get autoremove --yes || true
 
-#unbinding and clearing
-umount -lf $workdir/etc/fstab || true
-umount -lf -R $workdir/* 2>/dev/null || true
-rm -f $workdir/* || true
-rmdir $workdir/* || true
-rmdir $workdir || true
-
-#create boot config
-echo "insmod all_video" > $isowork/boot/grub/grub.cfg
-echo "menuentry $(cat /etc/os-release | grep ^NAME | sed s/.*=//) {" >> $isowork/boot/grub/grub.cfg
-echo "    linux /live/vmlinuz boot=live components locales=tr_TR.UTF-8,en_US.UTF-8 keyboard-layouts=tr" >> $isowork/boot/grub/grub.cfg
-echo "    initrd /live/initrd.img" >> $isowork/boot/grub/grub.cfg
-echo "}" >> $isowork/boot/grub/grub.cfg
-#create install config
-echo "menuentry Install $(cat /etc/os-release | grep ^NAME | sed s/.*=//) {" >> $isowork/boot/grub/grub.cfg
-echo "    linux /live/vmlinuz boot=live components init=/usr/bin/remaster" >> $isowork/boot/grub/grub.cfg
-echo "    initrd /live/initrd.img" >> $isowork/boot/grub/grub.cfg
-echo "}" >> $isowork/boot/grub/grub.cfg
-# create iso image
-grub-mkrescue $isowork -o ./live-image-amd64.iso
-rm -rf $isowork $workdir /root/.dummy
