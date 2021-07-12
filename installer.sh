@@ -98,14 +98,16 @@ fi
 chroot /target apt-get purge live-boot* live-config* live-tools --yes || true
 chroot /target apt-get autoremove --yes || true
 chroot /target update-initramfs -u -k all  || fallback
-chroot /target useradd -m -s /bin/bash $username || fallback
-mkdir /target/home/$username || true
-chroot /target chown $username /home/$username
-echo -e "$password\n$password\n" | chroot /target passwd $username
-#echo -e "$password\n$password\n" | chroot /target passwd root
-for grp in cdrom floppy sudo audio dip video plugdev netdev bluetooth lpadmin scanner ; do
-    chroot /target usermod -aG $grp $username || true
-done
+if [[ "${remove_user}" == "true" ]] ; then
+    chroot /target useradd -m -s /bin/bash $username || fallback
+    mkdir /target/home/$username || true
+    chroot /target chown $username /home/$username
+    echo -e "$password\n$password\n" | chroot /target passwd $username
+    #echo -e "$password\n$password\n" | chroot /target passwd root
+    for grp in cdrom floppy sudo audio dip video plugdev netdev bluetooth lpadmin scanner ; do
+        chroot /target usermod -aG $grp $username || true
+    done
+fi
 if [[ -d /sys/firmware/efi ]] ; then
     chroot /target grub-install /dev/${DISK} --target=x86_64-efi || fallback
 else

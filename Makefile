@@ -7,5 +7,5 @@ install:
 	install remaster.sh $(DESTDIR)/usr/bin/remaster
 	install remaster.svg $(DESTDIR)/usr/share/icons/remaster.svg
 	install remaster.desktop $(DESTDIR)/usr/share/applications/remaster.desktop
-	install inslatter.sh $(DESTDIR)/usr/lib/pardus/remaster/install
+	install installer.sh $(DESTDIR)/usr/lib/pardus/remaster/install
 	install remaster.conf $(DESTDIR)/etc/remaster.conf
