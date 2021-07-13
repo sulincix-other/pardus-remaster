@@ -14,7 +14,7 @@ if [[ $$ -eq 0 ]] ; then
     mount -t devtmpfs devtmpfs /dev || true
     mount -t proc proc /proc || true
     mount -t sysfs sysfs /sys || true
-    mount -t efivarfs efivars /sys/firmware/efi/efivars || true
+    mount -t efivarfs efivarfs /sys/firmware/efi/efivars || true
 fi
 mkdir /source /target || true
 mount /dev/loop0 /source || true
