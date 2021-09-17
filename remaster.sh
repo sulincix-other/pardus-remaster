@@ -1,6 +1,9 @@
 #!/bin/bash
 set -ex
 . /etc/remaster.conf
+if [[ "${integrate_installer}" == "true" ]] ; then
+    grep "boot=live" /proc/cmdline && /installer
+fi
 #install dependencies
 apt install grub-pc-bin grub-efi squashfs-tools xorriso mtools curl -y
 

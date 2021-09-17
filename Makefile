@@ -1,3 +1,6 @@
+build:
+	: Please run make install
+
 install:
 	mkdir -p $(DESTDIR)/usr/bin/
 	mkdir -p $(DESTDIR)/etc/
