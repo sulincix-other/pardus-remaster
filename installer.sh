@@ -1,13 +1,14 @@
 #!/bin/bash
 export PATH=/usr/bin:/usr/sbin:/bin:/sbin
+modprobe efivars || true
 # installation tool for remaster images
 msg(){
     echo -e "\033[32;1m$1\033[;0m"
 }
-echo "If you press any key in 3 seconds, switch to edit mode"
+echo "If you press any key in 3 seconds, create debug shell"
 echo "Waiting 3 seconds..."
 if read -n 1 -t 3 -s ; then
-    nano /etc/remaster.conf
+    PS1="\[\033[32;1m\]>>>\[\033[;0m\] " /bin/bash --norc --noprofile
 fi
 source /etc/remaster.conf
 if [[ $$ -eq 0 ]] ; then
@@ -21,7 +22,7 @@ mount /dev/loop0 /source || true
 fallback(){
         echo -e "\033[31;1mInstallation failed.\033[;0m"
         echo -e "Creating a shell for debuging. Good luck :D"
-        PS1="\[\033[32;1m\]>>>\[\033[;0m\]" /bin/bash --norc --noprofile
+        PS1="\[\033[32;1m\]>>>\[\033[;0m\] " /bin/bash --norc --noprofile
         if [[ $$ -eq 0 ]] ; then
             echo o > /proc/sysrq-trigger
         else
@@ -121,7 +122,7 @@ umount -f -R /target/* || true
 sync  || fallback
 
 if [[ "$debug" != "false" ]] ; then
-    PS1="\[\033[32;1m\]>>>\[\033[;0m\]" /bin/bash --norc --noprofile
+    PS1="\[\033[32;1m\]>>>\[\033[;0m\] " /bin/bash --norc --noprofile
 else
     echo "Installation done. System restarting in 10 seconds. Press any key to restart immediately."
     read -t 10 -n 1 -s
