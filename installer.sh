@@ -109,6 +109,7 @@ if [[ "${remove_user}" == "true" ]] ; then
     done
 fi
 if [[ -d /sys/firmware/efi ]] ; then
+    chroot /target mount -t efivarfs efivarfs /sys/firmware/efi/efivars || true
     chroot /target grub-install /dev/${DISK} --target=x86_64-efi || fallback
 else
     chroot /target grub-install /dev/${DISK} --target=i386-pc || fallback
