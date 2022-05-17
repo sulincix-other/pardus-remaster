@@ -29,7 +29,7 @@ chroot $rootfs apt autoremove -y
 echo -e "live\nlive\n" | chroot $rootfs passwd
 
 #mount empty file and directories
-for i in dev sys proc run tmp root media mnt; do
+for i in dev sys proc run tmp root media mnt var/remaster; do
     mount -v --bind /tmp/work/empty $rootfs/$i
 done
 
