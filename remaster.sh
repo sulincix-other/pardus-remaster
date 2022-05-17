@@ -1,6 +1,8 @@
 #!/bin/bash
 set -ex
-. /etc/remaster.conf
+mkdir -p /var/remaster
+cd /var/remaster
+1. /etc/remaster.conf
 if [[ "${integrate_installer}" == "true" ]] ; then
     grep "boot=live" /proc/cmdline && /installer
 fi
@@ -82,8 +84,26 @@ done
 #umount all
 umount -v -lf -R /tmp/work/* || true
 
-# create iso
-grub-mkrescue iso/ -o live-image-$(date +%s).iso
-
-
+# create img
+size=$(du -s iso | cut -f 1)
+qemu-img create "rootfs.img" $(($size*1500+300*1024*1024))
+parted "rootfs.img" mklabel msdos
+echo Ignore | parted "rootfs.img" mkpart primary fat32 0 100M
+echo Ignore | parted "rootfs.img" mkpart primary ext2 301M 100%
+losetup -d /dev/loop0 || true
+loop=$(losetup --partscan --find --show "rootfs.img" | grep "/dev/loop")
+mkfs.vfat ${loop}p1
+yes | mkfs.ext4 ${loop}p2
+mount ${loop}p2 /mnt
+mkdir -p /mnt/boot/efi
+mount ${loop}p1 /mnt/boot/efi
+cp -prfv iso/* /mnt
+sync
+echo "(hd0)   ${loop}" > /mnt/boot/grub/device.map
+grub-install --removable --grub-mkdevicemap=/mnt/boot/grub/device.map --target=i386-pc --root-directory=/mnt ${loop}
+grub-install --removable --grub-mkdevicemap=/mnt/boot/grub/device.map --target=x86_64-efi --root-directory=/mnt --efi-directory /mnt/boot/efi ${loop}
+sync
+umount /mnt/boot/efi
+umount /mnt
+losetup -d ${loop}* || true
 
