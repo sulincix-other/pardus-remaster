@@ -22,7 +22,7 @@ rm -f $rootfs/etc/resolv.conf || true
 echo "nameserver 1.1.1.1" > $rootfs/etc/resolv.conf
 
 #live-boot install
-chroot $rootfs apt install live-config live-boot -y
+chroot $rootfs apt install live-config live-boot --no-install-recommends -y
 chroot $rootfs apt autoremove -y
 echo -e "live\nlive\n" | chroot $rootfs passwd
 
@@ -31,15 +31,6 @@ for i in dev sys proc run tmp root media mnt; do
     mount -v --bind /tmp/work/empty $rootfs/$i
 done
 
-#hide flatpak applications (optional)
-[[ -d $rootfs/var/lib/flatpak ]] && mount -v --bind /tmp/work/empty $rootfs/var/lib/flatpak
-
-if [[ "${remove_user}" == "true" ]] ; then
-    #remove users
-    for u in $(ls /home/) ; do
-        chroot $rootfs userdel -fr $u || true
-    done
-fi
 mount --bind /tmp/work/empty-file $rootfs/etc/fstab
 
 if [[ "${integrate_installer}" == "true" ]] ; then

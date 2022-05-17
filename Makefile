@@ -6,7 +6,7 @@ install:
 	mkdir -p $(DESTDIR)/etc/
 	mkdir -p $(DESTDIR)/usr/share/icons/
 	mkdir -p $(DESTDIR)/usr/share/applications/
-	mkdir -p $(DESTDIR) /usr/lib/pardus/remaster/
+	mkdir -p $(DESTDIR)/usr/lib/pardus/remaster/
 	install remaster.sh $(DESTDIR)/usr/bin/remaster
 	install remaster.svg $(DESTDIR)/usr/share/icons/remaster.svg
 	install remaster.desktop $(DESTDIR)/usr/share/applications/remaster.desktop

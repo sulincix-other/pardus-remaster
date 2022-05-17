@@ -11,7 +11,7 @@ if read -n 1 -t 3 -s ; then
     PS1="\[\033[32;1m\]>>>\[\033[;0m\] " /bin/bash --norc --noprofile
 fi
 source /etc/remaster.conf
-if [[ $$ -eq 0 ]] ; then
+if [[ $UID -eq 0 ]] ; then
     mount -t devtmpfs devtmpfs /dev || true
     mount -t proc proc /proc || true
     mount -t sysfs sysfs /sys || true
@@ -23,7 +23,7 @@ fallback(){
         echo -e "\033[31;1mInstallation failed.\033[;0m"
         echo -e "Creating a shell for debuging. Good luck :D"
         PS1="\[\033[32;1m\]>>>\[\033[;0m\] " /bin/bash --norc --noprofile
-        if [[ $$ -eq 0 ]] ; then
+        if [[ $UID -eq 0 ]] ; then
             echo o > /proc/sysrq-trigger
         else
             exit 1
@@ -99,23 +99,12 @@ fi
 chroot /target apt-get purge live-boot* live-config* live-tools --yes || true
 chroot /target apt-get autoremove --yes || true
 chroot /target update-initramfs -u -k all  || fallback
-if [[ "${remove_user}" == "true" ]] ; then
-    chroot /target useradd -m -s /bin/bash $username || fallback
-    mkdir /target/home/$username || true
-    chroot /target chown $username /home/$username
-    echo -e "$password\n$password\n" | chroot /target passwd $username
-    #echo -e "$password\n$password\n" | chroot /target passwd root
-    for grp in cdrom floppy sudo audio dip video plugdev netdev bluetooth lpadmin scanner ; do
-        chroot /target usermod -aG $grp $username || true
-    done
-fi
 if [[ -d /sys/firmware/efi ]] ; then
     chroot /target mount -t efivarfs efivarfs /sys/firmware/efi/efivars || true
     chroot /target grub-install /dev/${DISK} --target=x86_64-efi || fallback
 else
     chroot /target grub-install /dev/${DISK} --target=i386-pc || fallback
 fi
-echo "GRUB_DISABLE_OS_PROBER=true" >> /target/etc/default/grub
 chroot /target update-grub  || fallback
 [[ -f /target/install ]] && rm -f /target/install || true
 umount -f -R /target/* || true
