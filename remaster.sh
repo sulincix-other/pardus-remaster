@@ -88,7 +88,7 @@ umount -v -lf -R /tmp/work/* || true
 size=$(du -s iso | cut -f 1)
 qemu-img create "rootfs.img" $(($size*1500+300*1024*1024))
 parted "rootfs.img" mklabel msdos
-echo Ignore | parted "rootfs.img" mkpart primary fat32 0 100M
+echo Ignore | parted "rootfs.img" mkpart primary fat32 2048 100M
 echo Ignore | parted "rootfs.img" mkpart primary ext2 301M 100%
 losetup -d /dev/loop0 || true
 loop=$(losetup --partscan --find --show "rootfs.img" | grep "/dev/loop")
