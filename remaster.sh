@@ -2,7 +2,7 @@
 set -ex
 mkdir -p /var/remaster
 cd /var/remaster
-1. /etc/remaster.conf
+source /etc/remaster.conf
 if [[ "${integrate_installer}" == "true" ]] ; then
     grep "boot=live" /proc/cmdline && /installer
 fi
