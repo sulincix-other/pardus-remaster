@@ -7,7 +7,7 @@ if [[ "${integrate_installer}" == "true" ]] ; then
     grep "boot=live" /proc/cmdline && /installer
 fi
 #install dependencies
-apt install grub-pc-bin grub-efi squashfs-tools xorriso mtools curl qemu-utils  -y
+apt install grub-pc-bin grub-efi squashfs-tools xorriso mtools curl qemu-utils -y
 
 #overlayfs mount
 mount -t tmpfs tmpfs /tmp || true
@@ -62,7 +62,7 @@ echo "set timeout=3" >> $grub
 echo "set timeout_style=menu" >> $grub
 dist=$(cat /etc/os-release | grep ^PRETTY_NAME | cut -f 2 -d '=' | head -n 1 | sed 's/\"//g')
 for k in $(ls /boot/vmlinuz-*) ; do
-    ver=$(echo $k | sed "s/.*vmlinuz-//g")
+    ver=$(echo $k | sed "s/.*vmlinuz-//g" | sort -V | head -n 1)
     if [[ -f /boot/initrd.img-$ver ]] ; then
         cp -f $rootfs/boot/vmlinuz-$ver iso/boot
         cp -f $rootfs/boot/initrd.img-$ver iso/boot
