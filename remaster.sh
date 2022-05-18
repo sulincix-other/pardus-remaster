@@ -66,6 +66,7 @@ for k in $(ls /boot/vmlinuz-*) ; do
     if [[ -f /boot/initrd.img-$ver ]] ; then
         cp -f $rootfs/boot/vmlinuz-$ver iso/boot
         cp -f $rootfs/boot/initrd.img-$ver iso/boot
+        chroot $rootfs update-initramfs -u -k $ver
         if [[ -f $rootfs/install && "${integrate_installer}" == "true" ]] ; then
             echo "menuentry \"Install $dist ($ver)\" {" >> $grub
             echo "    linux /boot/vmlinuz-$ver boot=live init=/install" >> $grub
