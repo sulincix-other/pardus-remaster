@@ -11,4 +11,5 @@ install:
 	install remaster.svg $(DESTDIR)/usr/share/icons/remaster.svg
 	install remaster.desktop $(DESTDIR)/usr/share/applications/remaster.desktop
 	install installer.sh $(DESTDIR)/usr/lib/pardus/remaster/install
+	install main.py $(DESTDIR)/usr/lib/pardus/remaster/mani.py
 	install remaster.conf $(DESTDIR)/etc/remaster.conf

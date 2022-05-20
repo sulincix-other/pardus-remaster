@@ -107,4 +107,6 @@ sync
 umount /mnt/boot/efi
 umount /mnt
 losetup -d ${loop}* || true
-
+if [[ "$1" != "" ]] ; then
+    mv rootfs.img "$1"
+fi
