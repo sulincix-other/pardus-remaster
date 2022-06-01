@@ -21,7 +21,7 @@ mount -t overlay -o lowerdir=/tmp/work/source,upperdir=/tmp/work/a,workdir=/tmp/
 #resolv.conf fix
 export rootfs=/tmp/work/target
 rm -f $rootfs/etc/resolv.conf || true
-echo "nameserver 1.1.1.1" > $rootfs/etc/resolv.conf
+cat /etc/resolv.conf > $rootfs/etc/resolv.conf
 
 #live-boot install
 chroot $rootfs apt install live-config live-boot --no-install-recommends -y
