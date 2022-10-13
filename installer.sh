@@ -5,25 +5,36 @@ modprobe efivars || true
 msg(){
     echo -e "\033[32;1m$1\033[;0m"
 }
-echo "If you press any key in 3 seconds, create debug shell"
-echo "Waiting 3 seconds..."
-if read -n 1 -t 3 -s ; then
-    PS1="\[\033[32;1m\]>>>\[\033[;0m\] " /bin/bash --norc --noprofile
-fi
 source /etc/remaster.conf
-if [[ $UID -eq 0 ]] ; then
+if [[ $$ -eq 1 ]] ; then
+    # Starting udev daemon
+    # Systemd-udevd or eudev
+    if [[ -f /lib/systemd/systemd-udevd ]] ; then
+        /lib/systemd/systemd-udevd --daemon # systemd-udev way
+    elif [[ -f /sbin/udevd ]] ; then
+        /sbin/udevd --daemon # eudev way
+    fi
+    # Starting udevadm
+    udevadm trigger -c add
+    udevadm settle
     mount -t devtmpfs devtmpfs /dev || true
     mount -t proc proc /proc || true
     mount -t sysfs sysfs /sys || true
     mount -t efivarfs efivarfs /sys/firmware/efi/efivars || true
 fi
+ls /sys/block/ | grep -v loop | while read line ; do
+    if grep 0 /sys/block/"$line"/removable &>/dev/null ; then
+        export DISK="$line"
+        break
+    fi
+done
 mkdir /source /target || true
 mount /dev/loop0 /source || true
 fallback(){
         echo -e "\033[31;1mInstallation failed.\033[;0m"
         echo -e "Creating a shell for debuging. Good luck :D"
         PS1="\[\033[32;1m\]>>>\[\033[;0m\] " /bin/bash --norc --noprofile
-        if [[ $UID -eq 0 ]] ; then
+        if [[ $$ -eq 1 ]] ; then
             echo o > /proc/sysrq-trigger
         else
             exit 1
@@ -37,27 +48,32 @@ fi
 if [[ "$partitioning" == "true" ]] ; then
     dd if=/dev/zero of=/dev/${DISK} bs=512 count=1
     sync && sleep 1
+    if echo ${DISK} | grep nvme ; then
+        DISKX=${DISK}p
+    else
+        DISKX=${DISK}
+    fi
     if [[ -d /sys/firmware/efi ]] ; then
         yes | parted /dev/${DISK} mktable gpt || fallback
         yes | parted /dev/${DISK} mkpart primary fat32 1 "100MB" || fallback
         yes | parted /dev/${DISK} mkpart primary fat32 100MB "100%" || fallback
         sync && sleep 1
-        yes | mkfs.vfat /dev/${DISK}1 || fallback
+        yes | mkfs.vfat /dev/${DISKX}1 || fallback
         sync && sleep 1
-        yes | mkfs.ext4  /dev/${DISK}2 || fallback
+        yes | mkfs.ext4  /dev/${DISKX}2 || fallback
         yes | parted /dev/${DISK} set 1 esp on || fallback
         sync && sleep 1
-        mount /dev/${DISK}2  /target || fallback
+        mount /dev/${DISKX}2  /target || fallback
         mkdir -p /target/boot/efi || true
-        mount /dev/${DISK}1 /target/boot/efi  || fallback
+        mount /dev/${DISKX}1 /target/boot/efi  || fallback
     else
         yes | parted /dev/${DISK} mktable msdos || fallback
         yes | parted /dev/${DISK} mkpart primary fat32 1 "100%" || fallback
         sync && sleep 1
-        yes | mkfs.ext4 /dev/${DISK}1  || fallback
+        yes | mkfs.ext4 /dev/${DISKX}1  || fallback
         yes | parted /dev/${DISK} set 1 boot on || fallback
         sync && sleep 1
-        mount /dev/${DISK}1 /target  || fallback
+        mount /dev/${DISKX}1 /target  || fallback
     fi
 else
     echo "Please input rootfs part (example sda2)"
@@ -88,9 +104,9 @@ else
     nano /target/etc/fstab
 fi
 
-for i in dev sys proc run 
+for i in dev sys proc run
 do
-    mkdir -p /target/$i || true 
+    mkdir -p /target/$i || true
     mount --bind /$i /target/$i  || fallback
 done
 if [[ -d /sys/firmware/efi ]] ; then
