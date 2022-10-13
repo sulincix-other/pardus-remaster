@@ -114,7 +114,7 @@ if [[ -d /sys/firmware/efi ]] ; then
     mount --bind /sys/firmware/efi/efivars /target/sys/firmware/efi/efivars || fallback
 fi
 chroot /target apt-get purge live-boot* live-config* live-tools --yes || true
-chroot /target apt-get autoremove --yes || true
+chroot /target apt-get purge pardus-remaster --yes || true
 chroot /target update-initramfs -u -k all  || fallback
 if [[ -d /sys/firmware/efi ]] ; then
     chroot /target mount -t efivarfs efivarfs /sys/firmware/efi/efivars || true
