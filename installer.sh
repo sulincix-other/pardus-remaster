@@ -22,12 +22,13 @@ if [[ $$ -eq 1 ]] ; then
     mount -t sysfs sysfs /sys || true
     mount -t efivarfs efivarfs /sys/firmware/efi/efivars || true
 fi
+export DISK=$(
 ls /sys/block/ | grep -v loop | while read line ; do
-    if grep 0 /sys/block/"$line"/removable &>/dev/null ; then
-        export DISK="$line"
+    if grep 0 /sys/block/"$line"/removable &>/dev/null; then
+        echo $line
         break
     fi
-done
+done)
 mkdir /source /target || true
 mount /dev/loop0 /source || true
 fallback(){
