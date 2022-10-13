@@ -27,6 +27,7 @@ cat /etc/resolv.conf > $rootfs/etc/resolv.conf
 chroot $rootfs apt install live-config live-boot --no-install-recommends -y
 chroot $rootfs apt autoremove -y
 echo -e "live\nlive\n" | chroot $rootfs passwd
+rm -f $rootfs/etc/initramfs-tools/conf.d/resume || true
 
 #mount empty file and directories
 for i in dev sys proc run tmp root media mnt var/remaster; do
@@ -46,6 +47,7 @@ chroot $rootfs apt install curl nano rsync parted grub-pc-bin grub-efi dosfstool
 
 #clear rootfs
 find $rootfs/var/log -type f | xargs rm -f
+find $rootfs/var/lib/apt/lists -type f | xargs rm -f
 chroot $rootfs apt clean -y
 
 install /etc/remaster.conf $rootfs/etc/remaster.conf
