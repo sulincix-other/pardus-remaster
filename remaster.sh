@@ -48,13 +48,14 @@ chroot $rootfs apt install curl nano rsync parted grub-pc-bin grub-efi dosfstool
 #clear rootfs
 find $rootfs/var/log -type f | xargs rm -f
 find $rootfs/var/lib/apt/lists -type f | xargs rm -f
+rm -rf $rootfs/home/*/.cache
 chroot $rootfs apt clean -y
 
 install /etc/remaster.conf $rootfs/etc/remaster.conf
 
 #create squashfs
 if [[ ! -f iso/live/filesystem.squashfs ]] ; then
-    mksquashfs $rootfs iso/live/filesystem.squashfs -comp gzip -wildcards
+    mksquashfs $rootfs iso/live/filesystem.squashfs -comp xz -wildcards
 fi
 
 #write grub file
@@ -89,10 +90,10 @@ umount -v -lf -R /tmp/work/* || true
 
 # create img
 size=$(du -s iso | cut -f 1)
-qemu-img create "rootfs.img" $(($size*1500+300*1024*1024))
+qemu-img create "rootfs.img" $(($size*1080+(300*1024*1024)))
 parted "rootfs.img" mklabel msdos
 echo Ignore | parted "rootfs.img" mkpart primary fat32 2048s 100M
-echo Ignore | parted "rootfs.img" mkpart primary ext2 301M 100%
+echo Ignore | parted "rootfs.img" mkpart primary ext2 101M 100%
 losetup -d /dev/loop0 || true
 loop=$(losetup --partscan --find --show "rootfs.img" | grep "/dev/loop")
 mkfs.vfat ${loop}p1
