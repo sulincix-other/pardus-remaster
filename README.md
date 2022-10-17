@@ -2,6 +2,11 @@
 Kurulu sistemin imajını almaya yarayan basit uygulama
 
 ## Nasıl kurulur
+1. Bu deb dosyasını indirip yükleyin. 
+
+https://github.com/sulincix-other/pardus-remaster/releases/download/current/pardus-remaster_0.1.0_all.deb
+
+## Nasıl kurulur (alternatif yol)
 1. Bu depoyu zip olarak indirin.
 1. zip dosyasını açın. 
 1. zip dosyasının olduğu yerde sağ tık yaparak terminali açın
