@@ -1,5 +1,6 @@
 #!/bin/bash
 set -ex
+rm -rf /var/remaster || true
 mkdir -p /var/remaster
 cd /var/remaster
 source /etc/remaster.conf
