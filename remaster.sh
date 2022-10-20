@@ -64,26 +64,24 @@ echo "insmod all_video" > $grub
 echo "set timeout=3" >> $grub
 echo "set timeout_style=menu" >> $grub
 dist=$(cat /etc/os-release | grep ^PRETTY_NAME | cut -f 2 -d '=' | head -n 1 | sed 's/\"//g')
-for k in $(ls /boot/vmlinuz-*) ; do
-    ver=$(echo $k | sed "s/.*vmlinuz-//g" | sort -V | head -n 1)
-    if [[ -f /boot/initrd.img-$ver ]] ; then
-        cp -f $rootfs/boot/vmlinuz-$ver iso/boot
-        cp -f $rootfs/boot/initrd.img-$ver iso/boot
-        chroot $rootfs update-initramfs -u -k $ver
-        if [[ -f $rootfs/install && "${integrate_installer}" == "true" ]] ; then
-            echo "menuentry \"Install $dist ($ver)\" {" >> $grub
-            echo "    linux /boot/vmlinuz-$ver boot=live init=/install quiet" >> $grub
-            echo "    initrd /boot/initrd.img-$ver" >> $grub
-            echo "}" >> $grub
-        fi
-        if [[ "${live_boot}" == "true" ]] ; then
-            echo "menuentry \"$dist ($ver)\" {" >> $grub
-            echo "    linux /boot/vmlinuz-$ver boot=live live-config quiet components timezone=Europe/Istanbul locales=tr_TR.UTF-8,en_US.UTF-8 keyboard-layouts=tr username=pardus hostname=pardus user-fullname=Pardus vga=791 noswap " >> $grub
-            echo "    initrd /boot/initrd.img-$ver" >> $grub
-            echo "}" >> $grub
-        fi
+ver=$(uname -r)
+if [[ -f /boot/vmlinuz-$ver ]] ; then
+    cp -f $rootfs/boot/vmlinuz-$ver iso/boot
+    chroot $rootfs update-initramfs -u -k $ver
+    cp -f $rootfs/boot/initrd.img-$ver iso/boot
+    if [[ -f $rootfs/install && "${integrate_installer}" == "true" ]] ; then
+        echo "menuentry \"Install $dist\" {" >> $grub
+        echo "    linux /boot/vmlinuz-$ver boot=live init=/install quiet" >> $grub
+        echo "    initrd /boot/initrd.img-$ver" >> $grub
+        echo "}" >> $grub
     fi
-done
+    if [[ "${live_boot}" == "true" ]] ; then
+        echo "menuentry \"$dist ($ver)\" {" >> $grub
+        echo "    linux /boot/vmlinuz-$ver boot=live live-config quiet components timezone=Europe/Istanbul locales=tr_TR.UTF-8,en_US.UTF-8 keyboard-layouts=tr username=pardus hostname=pardus user-fullname=Pardus vga=791 noswap " >> $grub
+        echo "    initrd /boot/initrd.img-$ver" >> $grub
+        echo "}" >> $grub
+    fi
+fi
 
 #umount all
 umount -v -lf -R /tmp/work/* || true
