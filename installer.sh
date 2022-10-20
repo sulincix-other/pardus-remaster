@@ -123,6 +123,7 @@ else
     chroot /target grub-install /dev/${DISK} --target=i386-pc || fallback
 fi
 chroot /target update-grub  || fallback
+dbus-uuidgen > /etc/machine-id
 [[ -f /target/install ]] && rm -f /target/install || true
 umount -f -R /target/* || true
 sync  || fallback
